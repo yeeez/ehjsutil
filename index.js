@@ -94,7 +94,7 @@ const Dbo = {
     saveOne: async (coll, doc, filter) => {
         if(doc._id) delete doc._id
         let entity = Dbo.database.collection(coll)
-        let result = await entity.findOneAndUpdate(filter, { $set: doc }, { upsert: true, returnOriginal: false })
+        let result = await entity.findOneAndUpdate(filter, { $set: doc }, { upsert: true, returnDocument: 'after' })
         if(result.ok) return result.value
         else throw result.lastErrorObject
     },
