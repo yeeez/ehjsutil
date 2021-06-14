@@ -1,12 +1,30 @@
 const axios = require('axios')
 const log4js = require('log4js')
-const crypto = require('crypto')
+const { createHash } = require('crypto')
 
 const logger = log4js.getLogger('EJU')
 logger.level = 'debug'
 const wxApiServer = 'https://api.weixin.qq.com/cgi-bin'
 
 const ShuXue = {
+    md5: content => {
+        let hash = createHash('md5')
+        hash.update(content)
+        return hash.digest('hex')
+    },
+    sign: (data, key, ts) => {
+        let timestamp = ts ? ts : (new Date()).getTime()
+        let buf = ''
+        if(data) {
+            let ks = Object.keys(data).sort()
+            for(let i=0; i<ks.length; i++) {
+                buf = buf + data[ks[i]]
+            }
+        }
+        buf = buf + timestamp + key
+        logger.debug(buf)
+        return ShuXue.md5(buf)
+    },
     tofix2: f => {
         return Math.round(f * 100) / 100
     },
@@ -28,7 +46,7 @@ const WeiXin = {
         tmpArr.sort()
         let tmpStr = tmpArr.join('')
         logger.debug(tmpStr)
-        let shasum = crypto.createHash('sha1')
+        let shasum = createHash('sha1')
         shasum.update(tmpStr)
         let signCheck = shasum.digest('hex')
         logger.debug(`${signature} vs ${signCheck}`)
