@@ -15,7 +15,8 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^0.21.1",
-    "log4js": "^6.3.0"
+    "log4js": "^6.3.0",
+    "mongodb": "^3.6.9"
   },
   "devDependencies": {
     "jest": "^27.0.4"

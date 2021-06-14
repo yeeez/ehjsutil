@@ -1,4 +1,4 @@
-const { ShuXue, WeiXin } = require('./index')
+const { ShuXue, WeiXin, Mongo } = require('./index')
 
 test('ShuXue.md5', () => {
     expect(ShuXue.md5('123456')).toBe('e10adc3949ba59abbe56e057f20f883e')
@@ -33,3 +33,12 @@ test('WeiXin.checkSign', () => {
 //     let appSecret = '65f2b6a3e572eb3cd3f33ab47c05f30b'
 //     return expect(WeiXin.getAccessToken(appID, appSecret)).resolves.toBeTruthy()
 // })
+
+test('Mongo.connect', async () => {
+    let mongoUrl = 'mongodb://huhu:iloveu@localhost:27017/xmxn'
+    let dbname = 'xmxn'
+    let r1 = await Mongo.connect(mongoUrl, dbname)
+    let r2 = await Mongo.close()
+    expect(r1).toBe(true)
+    expect(r2).toBe(true)
+})

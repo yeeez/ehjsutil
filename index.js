@@ -1,6 +1,7 @@
 const axios = require('axios')
 const log4js = require('log4js')
 const { createHash } = require('crypto')
+const { MongoClient, ObjectID } = require('mongodb')
 
 const logger = log4js.getLogger('EJU')
 logger.level = 'debug'
@@ -87,4 +88,45 @@ const WeiXin = {
     }
 }
 
-module.exports = { ShuXue, WeiXin }
+const Mongo = {
+    client: null,
+    database: null,
+    saveOne: async (coll, doc, filter) => {
+        if(doc._id) delete doc._id
+        let entity = Mongo.database.collection(coll)
+        let result = await entity.findOneAndUpdate(filter, { $set: doc }, { upsert: true, returnOriginal: false })
+        if(result.ok) return result.value
+        else throw result.lastErrorObject
+    },
+    removeOne: async (coll, doc) => {
+        if(!doc._id) throw 'doc _id property needed'
+        let entity = Mongo.database.collection(coll)
+        let filter = { _id: new ObjectID(doc._id) }
+        let result = await entity.findOneAndDelete(filter)
+        if(result.ok) return result.value
+        else throw result.lastErrorObject
+    },
+    getOne: async (coll, query, options) => {
+        let entity = Mongo.database.collection(coll)
+        return await entity.findOne(query ? query : {}, options ? options : {})
+    },
+    list: async (coll, query, options) => {
+        let entity = Mongo.database.collection(coll)
+        let cursor = entity.find(query ? query : {}, options ? options : {})
+        return await cursor.toArray()
+    },
+    connect: async (mongoUrl, dbname) => {
+        Mongo.client = new MongoClient(mongoUrl, { useUnifiedTopology: true })
+        await Mongo.client.connect()
+        Mongo.database = Mongo.client.db(dbname)
+        logger.info('mongo connected')
+        return true
+    },
+    close: async () => {
+        logger.info('mongo closing...')
+        if(Mongo.client) await Mongo.client.close()
+        return true
+    }
+}
+
+module.exports = { ShuXue, WeiXin, Mongo }
