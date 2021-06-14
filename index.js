@@ -88,45 +88,55 @@ const WeiXin = {
     }
 }
 
-const Mongo = {
+const Dbo = {
     client: null,
     database: null,
     saveOne: async (coll, doc, filter) => {
         if(doc._id) delete doc._id
-        let entity = Mongo.database.collection(coll)
+        let entity = Dbo.database.collection(coll)
         let result = await entity.findOneAndUpdate(filter, { $set: doc }, { upsert: true, returnOriginal: false })
         if(result.ok) return result.value
         else throw result.lastErrorObject
     },
     removeOne: async (coll, doc) => {
         if(!doc._id) throw 'doc _id property needed'
-        let entity = Mongo.database.collection(coll)
+        let entity = Dbo.database.collection(coll)
         let filter = { _id: new ObjectID(doc._id) }
         let result = await entity.findOneAndDelete(filter)
         if(result.ok) return result.value
         else throw result.lastErrorObject
     },
     getOne: async (coll, query, options) => {
-        let entity = Mongo.database.collection(coll)
+        let entity = Dbo.database.collection(coll)
         return await entity.findOne(query ? query : {}, options ? options : {})
     },
     list: async (coll, query, options) => {
-        let entity = Mongo.database.collection(coll)
+        let entity = Dbo.database.collection(coll)
         let cursor = entity.find(query ? query : {}, options ? options : {})
         return await cursor.toArray()
     },
     connect: async (mongoUrl, dbname) => {
-        Mongo.client = new MongoClient(mongoUrl, { useUnifiedTopology: true })
-        await Mongo.client.connect()
-        Mongo.database = Mongo.client.db(dbname)
+        Dbo.client = new MongoClient(mongoUrl, { useUnifiedTopology: true })
+        await Dbo.client.connect()
+        Dbo.database = Dbo.client.db(dbname)
         logger.info('mongo connected')
         return true
     },
     close: async () => {
         logger.info('mongo closing...')
-        if(Mongo.client) await Mongo.client.close()
+        if(Dbo.client) await Dbo.client.close()
         return true
     }
 }
 
-module.exports = { ShuXue, WeiXin, Mongo }
+const EHttp = {
+    resp: (success, data) => {
+        return {
+            success,
+            data: data !== undefined ? data : 'success',
+            msg: success ? 'success' : ( data != undefined ? data : '未知错误')
+        }
+    }
+}
+
+module.exports = { ShuXue, WeiXin, Dbo, EHttp }
