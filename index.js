@@ -91,12 +91,21 @@ const WeiXin = {
 const Dbo = {
     client: null,
     database: null,
-    saveOne: async (coll, doc, filter) => {
-        if(doc._id) delete doc._id
+    saveOne: async (coll, doc) => {
         let entity = Dbo.database.collection(coll)
-        let result = await entity.findOneAndUpdate(filter, { $set: doc }, { upsert: true, returnDocument: 'after' })
-        if(result.ok) return result.value
-        else throw result.lastErrorObject
+        if(doc._id) {
+            let filter = { _id: new ObjectID(doc._id) }
+            if(doc._id) delete doc._id
+            let result = await entity.findOneAndUpdate(
+                filter, { $set: doc }, { upsert: true, returnDocument: 'after' }
+            )
+            if(result.ok) return result.value
+            else throw result.lastErrorObject
+        } else {
+            let result = await entity.insertOne(doc)
+            doc._id = result.insertedId
+            return doc
+        }
     },
     removeOne: async (coll, doc) => {
         if(!doc._id) throw 'doc _id property needed'
