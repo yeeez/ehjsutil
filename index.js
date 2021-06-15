@@ -64,6 +64,17 @@ const WeiXin = {
             }, err => WeiXin.errorHandle(err, reject))
         })
     },
+    getH5Token: (appID, appSecret, code) => {
+        return new Promise((resolve, reject) => {
+            let url = `${wxOAuth}/access_token?appid=${appID}&secret=${appSecret}&code=${code}&grant_type=authorization_code`
+            logger.info(url)
+            axios.get(url).then(jo => {
+                logger.info(JSON.stringify(jo.data))
+                if(jo.data.errcode) reject(jo.data)
+                else resolve(jo.data)
+            }, err => WeiXin.errorHandle(err, reject))
+        })
+    },
     createMenu: (token, menu) => {
         return new Promise((resolve, reject) => {
             let url = `${wxApiServer}/menu/create?access_token=${token}`
