@@ -6,6 +6,7 @@ const { MongoClient, ObjectID } = require('mongodb')
 const logger = log4js.getLogger('EJU')
 logger.level = 'debug'
 const wxApiServer = 'https://api.weixin.qq.com/cgi-bin'
+const wxOAuth = 'https://api.weixin.qq.com/sns/oauth2'
 
 const ShuXue = {
     md5: content => {
