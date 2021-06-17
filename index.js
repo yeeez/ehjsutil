@@ -97,6 +97,31 @@ const WeiXin = {
                 else reject(jo.data.errmsg)
             }, err => WeiXin.errorHandle(err, reject))
         })
+    },
+    lstUser: token => {
+        return new Promise((resolve, reject) => {
+            let url = `${wxApiServer}/user/get?access_token=${token}`
+            logger.info(url)
+            axios.get(url).then(jo => {
+                logger.info(JSON.stringify(jo.data))
+                if(jo.data.errcode) reject(jo.data)
+                else resolve(jo.data)
+            }, err => WeiXin.errorHandle(err, reject))
+        })
+    },
+    getUserInfo: (token, openids) => {
+        let user_list = openids.map(v => {
+            return { openid: v, lang: 'zh_CN' }
+        })
+        return new Promise((resolve, reject) => {
+            let url = `${wxApiServer}/user/info/batchget?access_token=${token}`
+            logger.info(url)
+            axios.post(url, { user_list }).then(jo => {
+                logger.info(JSON.stringify(jo.data))
+                if(jo.data.errcode) reject(jo.data)
+                else resolve(jo.data)
+            }, err => WeiXin.errorHandle(err, reject))
+        })
     }
 }
 
