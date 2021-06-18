@@ -122,7 +122,17 @@ const WeiXin = {
                 else resolve(jo.data)
             }, err => WeiXin.errorHandle(err, reject))
         })
-    }
+    },
+    sendTplMsg: (token, msg) => {
+        return new Promise((resolve, reject) => {
+            let url = `${wxApiServer}/message/template/send?access_token=${token}`
+            logger.info(url)
+            axios.post(url, msg).then(jo => {
+                if(jo.data.errcode === 0) resolve()
+                else reject(jo.data.errmsg)
+            })
+        })
+    },
 }
 
 const Dbo = {
