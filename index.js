@@ -164,6 +164,7 @@ const Dbo = {
     },
     getOne: async (coll, query, options) => {
         let entity = Dbo.database.collection(coll)
+        if(query && query._id) query._id = new ObjectID(query._id)
         return await entity.findOne(query ? query : {}, options ? options : {})
     },
     list: async (coll, query, options) => {
