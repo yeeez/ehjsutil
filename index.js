@@ -135,6 +135,62 @@ const WeiXin = {
     },
 }
 
+const WxOpen = {
+    checkSign: (token, timestamp, nonce, encrypt, msgSignature) => {
+        let tmpArr = [token, timestamp, nonce, encrypt]
+        tmpArr.sort()
+        let tmpStr = tmpArr.join('')
+        logger.debug(tmpStr)
+        let shasum = createHash('sha1')
+        shasum.update(tmpStr)
+        let signCheck = shasum.digest('hex')
+        logger.debug(`${msgSignature} vs ${signCheck}`)
+        return msgSignature === signCheck
+    },
+    getAccessToken: (appid, appsecret, ticket) => {
+        let pd = {
+            component_appid: appid,
+            component_appsecret: appsecret,
+            component_verify_ticket: ticket
+        }
+        return new Promise((resolve, reject) => {
+            let url = `${wxApiServer}/component/api_component_token`
+            logger.info(url)
+            axios.post(url, pd).then(jo => {
+                logger.info(JSON.stringify(jo.data))
+                if(jo.data.errcode) reject(jo.data)
+                else resolve(jo.data)
+            }, err => WeiXin.errorHandle(err, reject))
+        })
+    },
+    getPreAuthCode: (componentAccessToken, appid) => {
+        return new Promise((resolve, reject) => {
+            let url = `${wxApiServer}/component/api_create_preauthcode?component_access_token=${componentAccessToken}`
+            logger.info(url)
+            axios.post(url, { component_appid: appid }).then(jo => {
+                logger.info(JSON.stringify(jo.data))
+                if(jo.data.errcode) reject(jo.data)
+                else resolve(jo.data)
+            }, err => WeiXin.errorHandle(err, reject))
+        })
+    },
+    getAuthInfo: (componentAccessToken, appid, authcode) => {
+        let pd = {
+            component_appid: appid,
+            authorization_code: authcode
+        }
+        return new Promise((resolve, reject) => {
+            let url = `${wxApiServer}/component/api_query_auth?component_access_token=${componentAccessToken}`
+            logger.info(url)
+            axios.post(url, pd).then(jo => {
+                logger.info(JSON.stringify(jo.data))
+                if(jo.data.errcode) reject(jo.data)
+                else resolve(jo.data)
+            }, err => WeiXin.errorHandle(err, reject))
+        })
+    },
+}
+
 const Dbo = {
     client: null,
     database: null,
@@ -196,4 +252,4 @@ const EHttp = {
     }
 }
 
-module.exports = { ShuXue, WeiXin, Dbo, EHttp }
+module.exports = { ShuXue, WxOpen, WeiXin, Dbo, EHttp }
