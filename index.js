@@ -57,7 +57,7 @@ const WeiXin = {
     getAccessToken: (appID, appSecret) => {
         return new Promise((resolve, reject) => {
             let url = `${wxApiServer}/token?grant_type=client_credential&appid=${appID}&secret=${appSecret}`
-            logger.info(url)
+            logger.info(`get ${url}`)
             axios.get(url).then(jo => {
                 logger.info(JSON.stringify(jo.data))
                 if(jo.data.errcode) reject(jo.data)
@@ -68,7 +68,7 @@ const WeiXin = {
     getH5Token: (appID, appSecret, code) => {
         return new Promise((resolve, reject) => {
             let url = `${wxOAuth}/access_token?appid=${appID}&secret=${appSecret}&code=${code}&grant_type=authorization_code`
-            logger.info(url)
+            logger.info(`get ${url}`)
             axios.get(url).then(jo => {
                 logger.info(JSON.stringify(jo.data))
                 if(jo.data.errcode) reject(jo.data)
@@ -79,7 +79,7 @@ const WeiXin = {
     createMenu: (token, menu) => {
         return new Promise((resolve, reject) => {
             let url = `${wxApiServer}/menu/create?access_token=${token}`
-            logger.info(`${url} ${JSON.stringify(menu)}`)
+            logger.info(`post ${url} ${JSON.stringify(menu)}`)
             axios.post(url, menu).then(jo => {
                 logger.info(JSON.stringify(jo.data))
                 if(jo.data.errcode === 0) resolve(menu)
@@ -90,7 +90,7 @@ const WeiXin = {
     downloadMenu: token => {
         return new Promise((resolve, reject) => {
             let url = `${wxApiServer}/get_current_selfmenu_info?access_token=${token}`
-            logger.info(url)
+            logger.info(`get ${url}`)
             axios.get(url).then(jo => {
                 logger.info(JSON.stringify(jo.data))
                 if(jo.data.errcode === undefined || jo.data.errcode === 0) resolve(jo.data)
@@ -101,7 +101,7 @@ const WeiXin = {
     lstUser: token => {
         return new Promise((resolve, reject) => {
             let url = `${wxApiServer}/user/get?access_token=${token}`
-            logger.info(url)
+            logger.info(`get ${url}`)
             axios.get(url).then(jo => {
                 logger.info(JSON.stringify(jo.data))
                 if(jo.data.errcode) reject(jo.data)
@@ -115,7 +115,7 @@ const WeiXin = {
         })
         return new Promise((resolve, reject) => {
             let url = `${wxApiServer}/user/info/batchget?access_token=${token}`
-            logger.info(url)
+            logger.info(`post ${url}`)
             axios.post(url, { user_list }).then(jo => {
                 logger.info(JSON.stringify(jo.data))
                 if(jo.data.errcode) reject(jo.data)
@@ -126,7 +126,7 @@ const WeiXin = {
     sendTplMsg: (token, msg) => {
         return new Promise((resolve, reject) => {
             let url = `${wxApiServer}/message/template/send?access_token=${token}`
-            logger.info(url)
+            logger.info(`post ${url} ${JSON.stringify(msg)}`)
             axios.post(url, msg).then(jo => {
                 if(jo.data.errcode === 0) resolve()
                 else reject(jo.data.errmsg)
@@ -155,7 +155,7 @@ const WxOpen = {
         }
         return new Promise((resolve, reject) => {
             let url = `${wxApiServer}/component/api_component_token`
-            logger.info(url)
+            logger.info(`post ${url} ${JSON.stringify(pd)}`)
             axios.post(url, pd).then(jo => {
                 logger.info(JSON.stringify(jo.data))
                 if(jo.data.errcode) reject(jo.data)
@@ -164,10 +164,11 @@ const WxOpen = {
         })
     },
     getPreAuthCode: (componentAccessToken, appid) => {
+        let pd = { component_appid: appid }
         return new Promise((resolve, reject) => {
             let url = `${wxApiServer}/component/api_create_preauthcode?component_access_token=${componentAccessToken}`
-            logger.info(url)
-            axios.post(url, { component_appid: appid }).then(jo => {
+            logger.info(`post ${url} ${JSON.stringify(pd)}`)
+            axios.post(url, pd).then(jo => {
                 logger.info(JSON.stringify(jo.data))
                 if(jo.data.errcode) reject(jo.data)
                 else resolve(jo.data)
@@ -181,7 +182,23 @@ const WxOpen = {
         }
         return new Promise((resolve, reject) => {
             let url = `${wxApiServer}/component/api_query_auth?component_access_token=${componentAccessToken}`
-            logger.info(url)
+            logger.info(`post ${url} ${JSON.stringify(pd)}`)
+            axios.post(url, pd).then(jo => {
+                logger.info(JSON.stringify(jo.data))
+                if(jo.data.errcode) reject(jo.data)
+                else resolve(jo.data)
+            }, err => WeiXin.errorHandle(err, reject))
+        })
+    },
+    getAuthToken: (componentAccessToken, appid, authAppid, refreshToken) => {
+        let pd = {
+            component_appid: appid,
+            authorizer_appid: authAppid,
+            authorizer_refresh_token: refreshToken
+        }
+        return new Promise((resolve, reject) => {
+            let url = `${wxApiServer}/component/api_authorizer_token?component_access_token=${componentAccessToken}`
+            logger.info(`post ${url} ${JSON.stringify(pd)}`)
             axios.post(url, pd).then(jo => {
                 logger.info(JSON.stringify(jo.data))
                 if(jo.data.errcode) reject(jo.data)
