@@ -5,8 +5,8 @@ const { MongoClient, ObjectID } = require('mongodb')
 
 const logger = log4js.getLogger('EJU')
 logger.level = 'debug'
-const wxApiServer = 'https://api.weixin.qq.com/cgi-bin'
-const wxOAuth = 'https://api.weixin.qq.com/sns/oauth2'
+const wxApiCgi = 'https://api.weixin.qq.com/cgi-bin'
+const wxApiSns = 'https://api.weixin.qq.com/sns'
 
 const ShuXue = {
     md5: content => {
@@ -36,12 +36,36 @@ const ShuXue = {
 }
 
 const WeiXin = {
+    joHandle: (jo, resolve, reject) => {
+        logger.info(JSON.stringify(jo.data))
+        if(jo.data.errcode === undefined || jo.data.errcode === 0) resolve(jo.data)
+        else reject(jo.data)
+        // if(jo.data.errcode) reject(jo.data)
+        // else resolve(jo.data)
+    },
     errorHandle: (err, reject) => {
         let msg = err.response ?
             `weixin api response ${err.response.status}` :
             (err.request ? 'request was made but no response' : err.message)
         logger.error(msg)
         if (reject) reject(msg)
+    },
+    request: (url, pd) => {
+        return new Promise((resolve, reject) => {
+            if(pd) {
+                logger.info(`post ${url} ${JSON.stringify(pd)}`)
+                axios.post(url, pd).then(
+                    jo => WeiXin.joHandle(jo, resolve, reject),
+                    err => WeiXin.errorHandle(err, reject)
+                )
+            } else {
+                logger.info(`get ${url}`)
+                axios.get(url).then(
+                    jo => WeiXin.joHandle(jo, resolve, reject),
+                    err => WeiXin.errorHandle(err, reject)
+                )
+            }
+        })
     },
     checkSign: (token, timestamp, nonce, signature) => {
         let tmpArr = [token, timestamp, nonce]
@@ -55,83 +79,39 @@ const WeiXin = {
         return signature === signCheck
     },
     getAccessToken: (appID, appSecret) => {
-        return new Promise((resolve, reject) => {
-            let url = `${wxApiServer}/token?grant_type=client_credential&appid=${appID}&secret=${appSecret}`
-            logger.info(`get ${url}`)
-            axios.get(url).then(jo => {
-                logger.info(JSON.stringify(jo.data))
-                if(jo.data.errcode) reject(jo.data)
-                else resolve(jo.data)
-            }, err => WeiXin.errorHandle(err, reject))
-        })
+        let url = `${wxApiCgi}/token?grant_type=client_credential&appid=${appID}&secret=${appSecret}`
+        return WeiXin.request(url)
     },
     getH5Token: (appID, appSecret, code) => {
-        return new Promise((resolve, reject) => {
-            let url = `${wxOAuth}/access_token?appid=${appID}&secret=${appSecret}&code=${code}&grant_type=authorization_code`
-            logger.info(`get ${url}`)
-            axios.get(url).then(jo => {
-                logger.info(JSON.stringify(jo.data))
-                if(jo.data.errcode) reject(jo.data)
-                else resolve(jo.data)
-            }, err => WeiXin.errorHandle(err, reject))
-        })
+        let url = `${wxApiSns}/oauth2/access_token?appid=${appID}&secret=${appSecret}&code=${code}&grant_type=authorization_code`
+        return WeiXin.request(url)
     },
     createMenu: (token, menu) => {
-        return new Promise((resolve, reject) => {
-            let url = `${wxApiServer}/menu/create?access_token=${token}`
-            logger.info(`post ${url} ${JSON.stringify(menu)}`)
-            axios.post(url, menu).then(jo => {
-                logger.info(JSON.stringify(jo.data))
-                if(jo.data.errcode === 0) resolve(menu)
-                else reject(jo.data.errmsg)
-            }, err => WeiXin.errorHandle(err, reject))
-        })
+        let url = `${wxApiCgi}/menu/create?access_token=${token}`
+        return WeiXin.request(url, menu)
     },
     downloadMenu: token => {
-        return new Promise((resolve, reject) => {
-            let url = `${wxApiServer}/get_current_selfmenu_info?access_token=${token}`
-            logger.info(`get ${url}`)
-            axios.get(url).then(jo => {
-                logger.info(JSON.stringify(jo.data))
-                if(jo.data.errcode === undefined || jo.data.errcode === 0) resolve(jo.data)
-                else reject(jo.data.errmsg)
-            }, err => WeiXin.errorHandle(err, reject))
-        })
+        let url = `${wxApiCgi}/get_current_selfmenu_info?access_token=${token}`
+        return WeiXin.request(url)
     },
     lstUser: token => {
-        return new Promise((resolve, reject) => {
-            let url = `${wxApiServer}/user/get?access_token=${token}`
-            logger.info(`get ${url}`)
-            axios.get(url).then(jo => {
-                logger.info(JSON.stringify(jo.data))
-                if(jo.data.errcode) reject(jo.data)
-                else resolve(jo.data)
-            }, err => WeiXin.errorHandle(err, reject))
-        })
+        let url = `${wxApiCgi}/user/get?access_token=${token}`
+        return WeiXin.request(url)
+    },
+    getH5User: (token, openid) => {
+        let url = `${wxApiSns}/userinfo?access_token=${token}&openid=${openid}&lang=zh_CN`
+        return WeiXin.request(url)
     },
     getUserInfo: (token, openids) => {
         let user_list = openids.map(v => {
             return { openid: v, lang: 'zh_CN' }
         })
-        return new Promise((resolve, reject) => {
-            let url = `${wxApiServer}/user/info/batchget?access_token=${token}`
-            logger.info(`post ${url}`)
-            axios.post(url, { user_list }).then(jo => {
-                logger.info(JSON.stringify(jo.data))
-                if(jo.data.errcode) reject(jo.data)
-                else resolve(jo.data)
-            }, err => WeiXin.errorHandle(err, reject))
-        })
+        let url = `${wxApiCgi}/user/info/batchget?access_token=${token}`
+        return WeiXin.request(url, user_list)
     },
     sendTplMsg: (token, msg) => {
-        return new Promise((resolve, reject) => {
-            let url = `${wxApiServer}/message/template/send?access_token=${token}`
-            logger.info(`post ${url} ${JSON.stringify(msg)}`)
-            axios.post(url, msg).then(jo => {
-                if(jo.data.errcode === 0) resolve()
-                else reject(jo.data.errmsg)
-            })
-        })
+        let url = `${wxApiCgi}/message/template/send?access_token=${token}`
+        return WeiXin.request(url, msg)
     },
 }
 
@@ -153,42 +133,21 @@ const WxOpen = {
             component_appsecret: appsecret,
             component_verify_ticket: ticket
         }
-        return new Promise((resolve, reject) => {
-            let url = `${wxApiServer}/component/api_component_token`
-            logger.info(`post ${url} ${JSON.stringify(pd)}`)
-            axios.post(url, pd).then(jo => {
-                logger.info(JSON.stringify(jo.data))
-                if(jo.data.errcode) reject(jo.data)
-                else resolve(jo.data)
-            }, err => WeiXin.errorHandle(err, reject))
-        })
+        let url = `${wxApiCgi}/component/api_component_token`
+        return WeiXin.request(url, pd)
     },
     getPreAuthCode: (componentAccessToken, appid) => {
         let pd = { component_appid: appid }
-        return new Promise((resolve, reject) => {
-            let url = `${wxApiServer}/component/api_create_preauthcode?component_access_token=${componentAccessToken}`
-            logger.info(`post ${url} ${JSON.stringify(pd)}`)
-            axios.post(url, pd).then(jo => {
-                logger.info(JSON.stringify(jo.data))
-                if(jo.data.errcode) reject(jo.data)
-                else resolve(jo.data)
-            }, err => WeiXin.errorHandle(err, reject))
-        })
+        let url = `${wxApiCgi}/component/api_create_preauthcode?component_access_token=${componentAccessToken}`
+        return WeiXin.request(url, pd)
     },
     getAuthInfo: (componentAccessToken, appid, authcode) => {
         let pd = {
             component_appid: appid,
             authorization_code: authcode
         }
-        return new Promise((resolve, reject) => {
-            let url = `${wxApiServer}/component/api_query_auth?component_access_token=${componentAccessToken}`
-            logger.info(`post ${url} ${JSON.stringify(pd)}`)
-            axios.post(url, pd).then(jo => {
-                logger.info(JSON.stringify(jo.data))
-                if(jo.data.errcode) reject(jo.data)
-                else resolve(jo.data)
-            }, err => WeiXin.errorHandle(err, reject))
-        })
+        let url = `${wxApiCgi}/component/api_query_auth?component_access_token=${componentAccessToken}`
+        return WeiXin.request(url, pd)
     },
     getAuthToken: (componentAccessToken, appid, authAppid, refreshToken) => {
         let pd = {
@@ -196,15 +155,14 @@ const WxOpen = {
             authorizer_appid: authAppid,
             authorizer_refresh_token: refreshToken
         }
-        return new Promise((resolve, reject) => {
-            let url = `${wxApiServer}/component/api_authorizer_token?component_access_token=${componentAccessToken}`
-            logger.info(`post ${url} ${JSON.stringify(pd)}`)
-            axios.post(url, pd).then(jo => {
-                logger.info(JSON.stringify(jo.data))
-                if(jo.data.errcode) reject(jo.data)
-                else resolve(jo.data)
-            }, err => WeiXin.errorHandle(err, reject))
-        })
+        let url = `${wxApiCgi}/component/api_authorizer_token?component_access_token=${componentAccessToken}`
+        return WeiXin.request(url, pd)
+    },
+    getH5Token: (appid, code, componentAppid, componentAccessToken) => {
+        let url = `${wxApiSns}/oauth2/component/access_token?appid=${appid}&code=${code}` +
+            `&grant_type=authorization_code&component_appid=${componentAppid}` +
+            `&component_access_token=${componentAccessToken}`
+        return WeiXin.request(url)
     },
 }
 
@@ -228,9 +186,9 @@ const Dbo = {
         }
     },
     removeOne: async (coll, doc) => {
-        if(!doc._id) throw 'doc _id property needed'
+        if(doc._id) filter = { _id: new ObjectID(doc._id) }
+        else filter = doc
         let entity = Dbo.database.collection(coll)
-        let filter = { _id: new ObjectID(doc._id) }
         let result = await entity.findOneAndDelete(filter)
         if(result.ok) return result.value
         else throw result.lastErrorObject
