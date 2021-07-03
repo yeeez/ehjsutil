@@ -169,11 +169,13 @@ const WxOpen = {
 const Dbo = {
     client: null,
     database: null,
-    saveOne: async (coll, doc) => {
+    saveOne: async (coll, doc, filter) => {
         let entity = Dbo.database.collection(coll)
-        if(doc._id) {
-            let filter = { _id: new ObjectID(doc._id) }
-            if(doc._id) delete doc._id
+        if(doc._id || filter) {
+            if(doc._id) {
+                filter = { _id: new ObjectID(doc._id) }
+                delete doc._id
+            }
             let result = await entity.findOneAndUpdate(
                 filter, { $set: doc }, { upsert: true, returnDocument: 'after' }
             )
