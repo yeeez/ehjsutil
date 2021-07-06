@@ -3,7 +3,7 @@ const log4js = require('log4js')
 const { createHash } = require('crypto')
 const { MongoClient, ObjectID } = require('mongodb')
 
-const logger = log4js.getLogger('EJU')
+const logger = log4js.getLogger('EJSU')
 logger.level = 'debug'
 const wxApiCgi = 'https://api.weixin.qq.com/cgi-bin'
 const wxApiSns = 'https://api.weixin.qq.com/sns'
@@ -177,7 +177,8 @@ const Dbo = {
                 delete doc._id
             }
             let result = await entity.findOneAndUpdate(
-                filter, { $set: doc }, { upsert: true, returnDocument: 'after' }
+                filter, { $set: doc },
+                { upsert: true, returnDocument: 'after', returnOriginal: false }
             )
             if(result.ok) return result.value
             else throw result.lastErrorObject
