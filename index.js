@@ -230,4 +230,12 @@ const EHttp = {
     }
 }
 
-module.exports = { ShuXue, WxOpen, WeiXin, Dbo, EHttp }
+function BizError(message) {
+    this.message = message
+    this.name = 'BizError'
+    Error.captureStackTrace(this, BizError)
+}
+BizError.prototype = new Error
+BizError.prototype.constructor = BizError
+
+module.exports = { ShuXue, WxOpen, WeiXin, Dbo, EHttp, BizError }
