@@ -32,7 +32,15 @@ const ShuXue = {
     },
     tofix3: f => {
         return Math.round(f * 1000) / 1000
-    }
+    },
+    tofix2s: m => {
+        let r = `${Math.round(m * 100)}`
+        return `${r.slice(0, -2)}.${r.slice(-2)}`
+    },
+    tofix3s: m => {
+        let r = `${Math.round(m * 1000)}`
+        return `${r.slice(0, -3)}.${r.slice(-3)}`
+    },
 }
 
 const WeiXin = {
