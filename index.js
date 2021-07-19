@@ -34,10 +34,12 @@ const ShuXue = {
         return Math.round(f * 1000) / 1000
     },
     tofix2s: m => {
+        if(m == undefined || m == null || m == 0) return '0.00'
         let r = `${Math.round(m * 100)}`
         return `${r.slice(0, -2)}.${r.slice(-2)}`
     },
     tofix3s: m => {
+        if(m == undefined || m == null || m == 0) return '0.000'
         let r = `${Math.round(m * 1000)}`
         return `${r.slice(0, -3)}.${r.slice(-3)}`
     },
