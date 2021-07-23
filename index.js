@@ -117,7 +117,7 @@ const WeiXin = {
             return { openid: v, lang: 'zh_CN' }
         })
         let url = `${wxApiCgi}/user/info/batchget?access_token=${token}`
-        return WeiXin.request(url, user_list)
+        return WeiXin.request(url, { user_list })
     },
     sendTplMsg: (token, msg) => {
         let url = `${wxApiCgi}/message/template/send?access_token=${token}`
