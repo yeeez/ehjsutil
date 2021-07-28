@@ -206,6 +206,15 @@ const Dbo = {
         if(result.ok) return result.value
         else throw result.lastErrorObject
     },
+    removeMany: async (coll, filter) => {
+        let entity = Dbo.database.collection(coll)
+        let { result } = await entity.deleteMany(filter)
+        if(result.ok) {
+            return result.n
+        } else {
+            throw new BizError('remove many fail')
+        }
+    },
     getOne: async (coll, query, options) => {
         let entity = Dbo.database.collection(coll)
         if(query && query._id) query._id = new ObjectID(query._id)
