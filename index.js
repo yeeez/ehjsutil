@@ -198,6 +198,18 @@ const Dbo = {
             return doc
         }
     },
+    replace: async (coll, doc) => {
+        let entity = Dbo.database.collection(coll)
+        if(doc._id) {
+            let filter = { _id: new ObjectID(doc._id) }
+            let result = await entity.findOneAndReplace(filter, doc,
+                { returnDocument: 'after', returnOriginal: false })
+            if(result.ok) return result.value
+            else throw result.lastErrorObject
+        } else {
+            throw new BizError('_id needed')
+        }
+    },
     removeOne: async (coll, doc) => {
         if(doc._id) filter = { _id: new ObjectID(doc._id) }
         else filter = doc
