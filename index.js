@@ -27,6 +27,9 @@ const ShuXue = {
         logger.debug(buf)
         return ShuXue.md5(buf)
     },
+    tofix: (f, n) => {
+        return Math.round(f * Math.pow(10, n)) / Math.pow(10, n)
+    },
     tofix2: f => {
         return Math.round(f * 100) / 100
     },
@@ -35,13 +38,23 @@ const ShuXue = {
     },
     tofix2s: m => {
         if(m == undefined || m == null || m == 0) return '0.00'
+        let prefix = ''
+        if(m < 0) {
+            m = 0 - m
+            prefix = '-'
+        }
         let r = `${Math.round(m * 100)}`
-        return `${r.slice(0, -2)}.${r.slice(-2)}`
+        return `${prefix}${r.length > 2 ? r.slice(0, -2) : '0'}.${r.slice(-2)}`
     },
     tofix3s: m => {
         if(m == undefined || m == null || m == 0) return '0.000'
+        let prefix = ''
+        if(m < 0) {
+            m = 0 - m
+            prefix = '-'
+        }
         let r = `${Math.round(m * 1000)}`
-        return `${r.slice(0, -3)}.${r.slice(-3)}`
+        return `${prefix}${r.length > 3 ? r.slice(0, -3) : '0'}.${r.slice(-3)}`
     },
 }
 
