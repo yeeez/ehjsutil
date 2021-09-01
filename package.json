@@ -16,7 +16,8 @@
   "dependencies": {
     "axios": "^0.21.1",
     "log4js": "^6.3.0",
-    "mongodb": "^3.6.9"
+    "mongodb": "^3.6.9",
+    "mysql": "^2.18.1"
   },
   "devDependencies": {
     "jest": "^27.0.4"

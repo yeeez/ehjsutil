@@ -2,6 +2,7 @@ const axios = require('axios')
 const log4js = require('log4js')
 const { createHash } = require('crypto')
 const { MongoClient, ObjectID } = require('mongodb')
+const mysql = require('mysql')
 
 const logger = log4js.getLogger('EJSU')
 logger.level = 'debug'
@@ -19,9 +20,7 @@ const ShuXue = {
         let buf = ''
         if(data) {
             let ks = Object.keys(data).sort()
-            for(let i=0; i<ks.length; i++) {
-                buf = buf + data[ks[i]]
-            }
+            for(let k of ks) buf = buf + data[k]
         }
         buf = buf + timestamp + key
         logger.debug(buf)
@@ -63,13 +62,12 @@ const WeiXin = {
         logger.info(JSON.stringify(jo.data))
         if(jo.data.errcode === undefined || jo.data.errcode === 0) resolve(jo.data)
         else reject(jo.data)
-        // if(jo.data.errcode) reject(jo.data)
-        // else resolve(jo.data)
     },
     errorHandle: (err, reject) => {
-        let msg = err.response ?
-            `weixin api response ${err.response.status}` :
-            (err.request ? 'request was made but no response' : err.message)
+        let msg
+        if(err.response) msg = `weixin api response ${err.response.status}`
+        else if(err.request) msg = 'request was made but no response'
+        else msg = err.message
         logger.error(msg)
         if (reject) reject(msg)
     },
@@ -224,8 +222,7 @@ const Dbo = {
         }
     },
     removeOne: async (coll, doc) => {
-        if(doc._id) filter = { _id: new ObjectID(doc._id) }
-        else filter = doc
+        let filter = doc._id ? { _id: new ObjectID(doc._id) } : doc
         let entity = Dbo.database.collection(coll)
         let result = await entity.findOneAndDelete(filter)
         if(result.ok) return result.value
@@ -264,12 +261,66 @@ const Dbo = {
     }
 }
 
+const Mysql = {
+    connection: null,
+    init: mysqlOpt => {
+        return new Promise((resolve, reject) => {
+            Mysql.connection = mysql.createConnection(mysqlOpt)
+            Mysql.connection.connect(err => {
+                if(err) reject(err)
+                else {
+                    logger.info('mysql connected')
+                    resolve(Mysql.connection)
+                }
+            })
+        })
+    },
+    close: () => {
+        Mysql.connection.end();
+        logger.info('mysql closed');
+    },
+    execute: sql => {
+        return new Promise((resolve, reject) => {
+            Mysql.connection.query(sql, (err, rs) => {
+                if(err) reject(err)
+                else resolve(rs);
+            })
+        })
+    },
+    insertOne: async sql => {
+        let rs = await Mysql.execute(sql);
+        return rs.insertId
+    },
+    list: async sql => {
+        return Mysql.execute(sql)
+    },
+    getOne: async sql => {
+        let rs = await Mysql.execute(sql)
+        if(rs.length > 0) return rs[0]
+        else return undefined
+    },
+    getInt: async (sql, name) => {
+        let rs = await Mysql.execute(sql)
+        if(rs.length <= 0) return undefined
+        if(name) {
+            if(!rs[name]) return undefined
+            return parseInt(rs[name], 0)
+        } else {
+            return parseInt(rs[0], 0)
+        }
+    },
+}
+
 const EHttp = {
     resp: (success, data) => {
+        let msg
+        if(success) msg = 'success'
+        else if(data != undefined) msg = data
+        else msg = '未知错误'
         return {
             success,
             data: data !== undefined ? data : 'success',
-            msg: success ? 'success' : ( data != undefined ? data : '未知错误')
+            msg,
         }
     }
 }
@@ -282,4 +333,4 @@ function BizError(message) {
 BizError.prototype = new Error
 BizError.prototype.constructor = BizError
 
-module.exports = { ShuXue, WxOpen, WeiXin, Dbo, EHttp, BizError }
+module.exports = { ShuXue, WxOpen, WeiXin, Dbo, Mysql, EHttp, BizError }
