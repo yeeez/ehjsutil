@@ -247,6 +247,10 @@ const Dbo = {
         let cursor = entity.find(query ? query : {}, options ? options : {})
         return await cursor.toArray()
     },
+    count: (coll, query) => {
+        let entity = Dbo.database.collection(coll)
+        return entity.countDocuments(query ? query : {})
+    },
     connect: async (mongoUrl, dbname) => {
         Dbo.client = new MongoClient(mongoUrl, { useUnifiedTopology: true })
         await Dbo.client.connect()
