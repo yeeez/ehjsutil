@@ -240,12 +240,12 @@ const Dbo = {
     getOne: async (coll, query, options) => {
         let entity = Dbo.database.collection(coll)
         if(query && query._id) query._id = new ObjectID(query._id)
-        return await entity.findOne(query ? query : {}, options ? options : {})
+        return entity.findOne(query ? query : {}, options ? options : {})
     },
     list: async (coll, query, options) => {
         let entity = Dbo.database.collection(coll)
         let cursor = entity.find(query ? query : {}, options ? options : {})
-        return await cursor.toArray()
+        return cursor.toArray()
     },
     count: (coll, query) => {
         let entity = Dbo.database.collection(coll)
@@ -337,4 +337,12 @@ function BizError(message) {
 BizError.prototype = new Error
 BizError.prototype.constructor = BizError
 
-module.exports = { ShuXue, WxOpen, WeiXin, Dbo, Mysql, EHttp, BizError }
+const fkSleep = n => {
+    return new Promise(resolve => {
+        setTimeout(() => {
+            resolve()
+        }, n)
+    })
+}
+
+module.exports = { ShuXue, WxOpen, WeiXin, Dbo, Mysql, EHttp, BizError, fkSleep }
