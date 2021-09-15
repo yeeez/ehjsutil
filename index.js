@@ -199,7 +199,7 @@ const Dbo = {
             }
             let result = await entity.findOneAndUpdate(
                 filter, { $set: doc },
-                { upsert: true, returnDocument: 'after', returnOriginal: false }
+                { upsert: true, returnDocument: 'after' }
             )
             if(result.ok) return result.value
             else throw result.lastErrorObject
