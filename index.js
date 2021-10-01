@@ -58,35 +58,10 @@ const ShuXue = {
 }
 
 const WeiXin = {
-    joHandle: (jo, resolve, reject) => {
+    joHandle: jo => {
         logger.info(JSON.stringify(jo.data))
-        if(jo.data.errcode === undefined || jo.data.errcode === 0) resolve(jo.data)
-        else reject(jo.data)
-    },
-    errorHandle: (err, reject) => {
-        let msg
-        if(err.response) msg = `weixin api response ${err.response.status}`
-        else if(err.request) msg = 'request was made but no response'
-        else msg = err.message
-        logger.error(msg)
-        if (reject) reject(msg)
-    },
-    request: (url, pd) => {
-        return new Promise((resolve, reject) => {
-            if(pd) {
-                logger.info(`post ${url} ${JSON.stringify(pd)}`)
-                axios.post(url, pd).then(
-                    jo => WeiXin.joHandle(jo, resolve, reject),
-                    err => WeiXin.errorHandle(err, reject)
-                )
-            } else {
-                logger.info(`get ${url}`)
-                axios.get(url).then(
-                    jo => WeiXin.joHandle(jo, resolve, reject),
-                    err => WeiXin.errorHandle(err, reject)
-                )
-            }
-        })
+        if(jo.data.errcode === undefined || jo.data.errcode === 0) return jo.data
+        else throw new BizError(jo.data)
     },
     checkSign: (token, timestamp, nonce, signature) => {
         let tmpArr = [token, timestamp, nonce]
@@ -101,38 +76,38 @@ const WeiXin = {
     },
     getAccessToken: (appID, appSecret) => {
         let url = `${wxApiCgi}/token?grant_type=client_credential&appid=${appID}&secret=${appSecret}`
-        return WeiXin.request(url)
+        return EHttp.request(url, WeiXin.joHandle)
     },
     getH5Token: (appID, appSecret, code) => {
         let url = `${wxApiSns}/oauth2/access_token?appid=${appID}&secret=${appSecret}&code=${code}&grant_type=authorization_code`
-        return WeiXin.request(url)
+        return EHttp.request(url, WeiXin.joHandle)
     },
     createMenu: (token, menu) => {
         let url = `${wxApiCgi}/menu/create?access_token=${token}`
-        return WeiXin.request(url, menu)
+        return EHttp.request(url, WeiXin.joHandle, menu)
     },
     downloadMenu: token => {
         let url = `${wxApiCgi}/get_current_selfmenu_info?access_token=${token}`
-        return WeiXin.request(url)
+        return EHttp.request(url, WeiXin.joHandle)
     },
     lstUser: token => {
         let url = `${wxApiCgi}/user/get?access_token=${token}`
-        return WeiXin.request(url)
+        return EHttp.request(url, WeiXin.joHandle)
     },
     getH5User: (token, openid) => {
         let url = `${wxApiSns}/userinfo?access_token=${token}&openid=${openid}&lang=zh_CN`
-        return WeiXin.request(url)
+        return EHttp.request(url, WeiXin.joHandle)
     },
     getUserInfo: (token, openids) => {
         let user_list = openids.map(v => {
             return { openid: v, lang: 'zh_CN' }
         })
         let url = `${wxApiCgi}/user/info/batchget?access_token=${token}`
-        return WeiXin.request(url, { user_list })
+        return EHttp.request(url, WeiXin.joHandle, { user_list })
     },
     sendTplMsg: (token, msg) => {
         let url = `${wxApiCgi}/message/template/send?access_token=${token}`
-        return WeiXin.request(url, msg)
+        return EHttp.request(url, WeiXin.joHandle, msg)
     },
 }
 
@@ -155,12 +130,12 @@ const WxOpen = {
             component_verify_ticket: ticket
         }
         let url = `${wxApiCgi}/component/api_component_token`
-        return WeiXin.request(url, pd)
+        return EHttp.request(url, WeiXin.joHandle, pd)
     },
     getPreAuthCode: (componentAccessToken, appid) => {
         let pd = { component_appid: appid }
         let url = `${wxApiCgi}/component/api_create_preauthcode?component_access_token=${componentAccessToken}`
-        return WeiXin.request(url, pd)
+        return EHttp.request(url, WeiXin.joHandle, pd)
     },
     getAuthInfo: (componentAccessToken, appid, authcode) => {
         let pd = {
@@ -168,7 +143,7 @@ const WxOpen = {
             authorization_code: authcode
         }
         let url = `${wxApiCgi}/component/api_query_auth?component_access_token=${componentAccessToken}`
-        return WeiXin.request(url, pd)
+        return EHttp.request(url, WeiXin.joHandle, pd)
     },
     getAuthToken: (componentAccessToken, appid, authAppid, refreshToken) => {
         let pd = {
@@ -177,13 +152,13 @@ const WxOpen = {
             authorizer_refresh_token: refreshToken
         }
         let url = `${wxApiCgi}/component/api_authorizer_token?component_access_token=${componentAccessToken}`
-        return WeiXin.request(url, pd)
+        return EHttp.request(url, WeiXin.joHandle, pd)
     },
     getH5Token: (appid, code, componentAppid, componentAccessToken) => {
         let url = `${wxApiSns}/oauth2/component/access_token?appid=${appid}&code=${code}` +
             `&grant_type=authorization_code&component_appid=${componentAppid}` +
             `&component_access_token=${componentAccessToken}`
-        return WeiXin.request(url)
+        return EHttp.request(url, WeiXin.joHandle)
     },
 }
 
@@ -255,7 +230,7 @@ const Dbo = {
         Dbo.client = new MongoClient(mongoUrl, { useUnifiedTopology: true })
         await Dbo.client.connect()
         Dbo.database = Dbo.client.db(dbname)
-        logger.info('mongo connected')
+        logger.info(`mongo ${dbname} connected`)
         return true
     },
     close: async () => {
@@ -326,7 +301,35 @@ const EHttp = {
             data: data !== undefined ? data : 'success',
             msg,
         }
-    }
+    },
+    ehHandle: jo => {
+        logger.info(JSON.stringify(jo.data))
+        if(jo.data.success) return jo.data.data
+        else throw new BizError(jo.data.msg)
+    },
+    ehRequest: (url, pd) => {
+        return EHttp.request(url, EHttp.ehHandle, pd)
+    },
+    request: async (url, callback, pd) => {
+        try {
+            if(pd) {
+                logger.info(`post ${url} ${JSON.stringify(pd)}`)
+                let jo = await axios.post(url, pd)
+                return callback(jo)
+            } else {
+                logger.info(`get ${url}`)
+                let jo = await axios.get(url)
+                return callback(jo)
+            }
+        } catch(e) {
+            let msg
+            if(err.response) msg = `response status ${err.response.status}`
+            else if(err.request) msg = 'request was made but no response'
+            else msg = err.message
+            logger.error(msg)
+            throw new BizError(msg)
+        }
+    },
 }
 
 function BizError(message) {
