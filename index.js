@@ -321,7 +321,7 @@ const EHttp = {
                 let jo = await axios.get(url)
                 return callback(jo)
             }
-        } catch(e) {
+        } catch(err) {
             let msg
             if(err.response) msg = `response status ${err.response.status}`
             else if(err.request) msg = 'request was made but no response'
