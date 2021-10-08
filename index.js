@@ -326,7 +326,7 @@ const EHttp = {
             if(err.response) msg = `response status ${err.response.status}`
             else if(err.request) msg = 'request was made but no response'
             else msg = err.message
-            logger.error(msg)
+            logger.error(JSON.stringify(msg))
             throw new BizError(msg)
         }
     },
