@@ -281,11 +281,14 @@ const Mysql = {
     getInt: async (sql, name) => {
         let rs = await Mysql.execute(sql)
         if(rs.length <= 0) return undefined
+        let r = rs[0]
         if(name) {
             if(!rs[name]) return undefined
-            return parseInt(rs[name], 0)
+            return parseInt(r[name], 0)
         } else {
-            return parseInt(rs[0], 0)
+            for(let i in r) {
+                return parseInt(r[i], 0)
+            }
         }
     },
 }
