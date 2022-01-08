@@ -109,6 +109,10 @@ const WeiXin = {
         let url = `${wxApiCgi}/message/template/send?access_token=${token}`
         return EHttp.request(url, WeiXin.joHandle, msg)
     },
+    updateRemark: (token, openid, remark) => {
+        let url = `${wxApiCgi}/user/info/updateremark?access_token=${token}`
+        return EHttp.request(url, WeiXin.joHandle, { openid, remark })
+    }
 }
 
 const WxOpen = {
