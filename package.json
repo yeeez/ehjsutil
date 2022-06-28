@@ -8,10 +8,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "http://www.xmehome.com:3000/arlen.yeh/ehjsutil"
+    "url": "https://github.com/yeeez/ehjsutil"
   },
   "keywords": [],
-  "author": "",
+  "author": "arlenyeh",
   "license": "ISC",
   "dependencies": {
     "axios": "^0.21.1",
